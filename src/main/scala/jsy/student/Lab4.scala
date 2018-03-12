@@ -8,8 +8,8 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
   
   /*
    * CSCI 3155: Lab 4
-   * <Your Name>
-   * 
+   * <Eric Minor>
+   *
    * Partner: <Your Partner's Name>
    * Collaborators: <Any Collaborators>
    */
@@ -38,25 +38,31 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
   /* Lists */
   
   def compressRec[A](l: List[A]): List[A] = l match {
-    case Nil | _ :: Nil => ???
-    case h1 :: (t1 @ (h2 :: _)) => ???
+    case Nil | _ :: Nil => l
+    case h1 :: (t1 @ (h2 :: _)) => if(h1!=h2) h1::compressRec(t1) else compressRec(t1)
   }
   
   def compressFold[A](l: List[A]): List[A] = l.foldRight(Nil: List[A]){
-    (h, acc) => ???
+    (h, acc) => acc match{
+      case Nil => h::acc
+      case h1::_ => if(h!=h1) h::acc else acc
+    }
   }
   
   def mapFirst[A](l: List[A])(f: A => Option[A]): List[A] = l match {
-    case Nil => ???
-    case h :: t => ???
+    case Nil => Nil
+    case h :: t => f(h) match {
+      case Some(a) => a::t
+      case None => h::mapFirst(t)(f)
+    }
   }
   
   /* Trees */
 
   def foldLeft[A](t: Tree)(z: A)(f: (A, Int) => A): A = {
     def loop(acc: A, t: Tree): A = t match {
-      case Empty => ???
-      case Node(l, d, r) => ???
+      case Empty => acc
+      case Node(l, d, r) => loop(f(loop(acc,l),d),r)
     }
     loop(z, t)
   }
@@ -71,7 +77,11 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
 
   def strictlyOrdered(t: Tree): Boolean = {
     val (b, _) = foldLeft(t)((true, None: Option[Int])){
-      ???
+      (acc,d) => acc match {
+        case (false,_) => (false, None)
+        case (true, None) => (true,Some(d))
+        case (true,Some(s)) => if(d>s) (true,Some(d)) else (false,None)
+      }
     }
     b
   }
@@ -91,32 +101,49 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
 
     e match {
       case Print(e1) => typeof(env, e1); TUndefined
-      case N(_) => ???
-      case B(_) => ???
-      case Undefined => ???
-      case S(_) => ???
-      case Var(x) => ???
+      case N(_) => TNumber
+      case B(_) => TBool
+      case Undefined => TUndefined
+      case S(_) => TString
+      case Var(x) => lookup(env,x)
       case Decl(mode, x, e1, e2) => ???
       case Unary(Neg, e1) => typeof(env, e1) match {
         case TNumber => TNumber
         case tgot => err(tgot, e1)
       }
-      case Unary(Not, e1) =>
-        ???
-      case Binary(Plus, e1, e2) =>
-        ???
-      case Binary(Minus|Times|Div, e1, e2) => 
-        ???
-      case Binary(Eq|Ne, e1, e2) =>
-        ???
-      case Binary(Lt|Le|Gt|Ge, e1, e2) =>
-        ???
-      case Binary(And|Or, e1, e2) =>
-        ???
-      case Binary(Seq, e1, e2) =>
-        ???
-      case If(e1, e2, e3) =>
-        ???
+      case Unary(Not, e1) =>typeof(env, e1) match {
+        case TBool => TBool
+        case tgot => err(tgot, e1)
+      }
+      case Binary(Plus, e1, e2) => (typeof(env,e1), typeof(env,e2)) match {
+        case (TNumber,TNumber) => TNumber
+        case (TString,TString) => TString
+        case (tgot,_) => err(tgot,e1)
+      }
+      case Binary(Minus|Times|Div, e1, e2) => (typeof(env,e1), typeof(env,e2)) match {
+        case (TNumber,TNumber) => TNumber
+        case (tgot,_) => err(tgot,e1)
+      }
+      case Binary(Eq|Ne, e1, e2) => (typeof(env,e1), typeof(env,e2)) match {
+        case (a,b) if(a==b && !hasFunctionTyp(a)) => TBool
+        case (_,_) => err(TUndefined,e1)
+      }
+      case Binary(Lt|Le|Gt|Ge, e1, e2) => (typeof(env,e1), typeof(env,e2)) match {
+        case (TNumber,TNumber)|(TString,TString) => TBool
+        case (tgot,_) => err(tgot,e1)
+      }
+      case Binary(And|Or, e1, e2) =>(typeof(env,e1), typeof(env,e2)) match {
+        case (TBool,TBool) => TBool
+        case (tgot,_) => err(tgot,e1)
+      }
+      case Binary(Seq, e1, e2) => {
+        typeof(env,e1)
+        typeof(env,e2)
+      }
+      case If(e1, e2, e3) => (typeof(env,e1),typeof(env,e2),typeof(env,e3)) match {
+        case (TBool,t1,t2) if(t1==t2) => t1
+        case (tgot,_,_) => err(tgot,e1)
+      }
       case Function(p, params, tann, e1) => {
         // Bind to env1 an environment that extends env with an appropriate binding if
         // the function is potentially recursive.
@@ -134,7 +161,7 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       case Call(e1, args) => typeof(env, e1) match {
         case TFunction(params, tret) if (params.length == args.length) =>
           (params zip args).foreach {
-            ???
+            a =>
           };
           tret
         case tgot => err(tgot, e1)
@@ -177,11 +204,11 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       case N(_) | B(_) | Undefined | S(_) => e
       case Print(e1) => Print(substitute(e1, esub, x))
         /***** Cases from Lab 3 */
-      case Unary(uop, e1) => ???
-      case Binary(bop, e1, e2) => ???
-      case If(e1, e2, e3) => ???
-      case Var(y) => ???
-      case Decl(mode, y, e1, e2) => ???
+      case Unary(uop, e1) => Unary(uop,substitute(e1,esub,x))
+      case Binary(bop, e1, e2) => Binary(bop, substitute(e1,esub,x),substitute(e2,esub,x))
+      case If(e1, e2, e3) => If(substitute(e1,esub,x),substitute(e2,esub,x),substitute(e3,esub,x))
+      case Var(y) => if (y==x) esub else e
+      case Decl(mode, y, e1, e2) => if (y!=x) Decl(mode,y,substitute(e1,esub,x),substitute(e2,esub,x)) else Decl(mode,y,substitute(e1,esub,x),e2)
         /***** Cases needing adapting from Lab 3 */
       case Function(p, params, tann, e1) =>
         ???
