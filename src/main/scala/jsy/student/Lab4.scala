@@ -316,7 +316,28 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       /* Base Cases: Do Rules */
       case Print(v1) if isValue(v1) => println(pretty(v1)); Undefined
         /***** Cases needing adapting from Lab 3. */
-      case Unary(Neg, v1) if isValue(v1) => ???
+      case Unary(Neg, N(n)) => N(-n)
+      case Unary(Not, B(b)) => B(!b)
+      case Binary(Seq,e1,e2) if isValue(e1) => e2
+      case Binary(op@(Plus|Minus|Div|Times),N(n1),N(n2)) => op match {
+        case Plus => N(n1+n2)
+        case Minus => N(n1-n2)
+        case Div => N(n1/n2)
+        case Times => N(n1*n2)
+      }
+      case Binary(Plus,S(s1),S(s2)) => S(s1+s2)
+      case Binary(op@(Gt|Lt|Ge|Le),e1@N(_),e2@N(_)) => B(inequalityVal(op,e1,e2))
+      case Binary(op@(Gt|Lt|Ge|Le),e1@S(_),e2@S(_)) => B(inequalityVal(op,e1,e2))
+      case Binary(op@(Eq|Ne),e1,e2) if(isValue(e1) && isValue(e2)) => op match{
+        case Eq=> B(e1==e2)
+        case Ne=> B(e1!=e2)
+      }
+      case Binary(And,B(true),e2) => e2
+      case Binary(And,B(false),e2) => B(false)
+      case Binary(Or,B(true),e2) => B(true)
+      case Binary(Or,B(false),e2) => e2
+      case If(B(true),e2,_) => e2
+      case If(B(false),_,e3) => e3
         /***** More cases here */
       case Call(v1, args) if isValue(v1) =>
         v1 match {
