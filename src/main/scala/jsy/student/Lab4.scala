@@ -366,7 +366,11 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       /* Inductive Cases: Search Rules */
       case Print(e1) => Print(step(e1))
         /***** Cases from Lab 3. */
-      case Unary(uop, e1) => ???
+      case Unary(uop, e1) => Unary(uop,step(e1))
+      case Binary(bop,e1,e2) => Binary(bop,step(e1),e1)
+      case Binary(bop,v1,e2) if(isValue(v1)) => Binary(bop,v1,step(e2))
+      case If(e1,e2,e3) => If(step(e1),e2,e3)
+
         /***** More cases here */
         /***** Cases needing adapting from Lab 3 */
       case Call(v1 @ Function(_, _, _, _), args) => ???
