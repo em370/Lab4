@@ -10,7 +10,7 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
    * CSCI 3155: Lab 4
    * <Eric Minor>
    *
-   * Partner: <Your Partner's Name>
+   * Partner: <Gordon Gu>
    * Collaborators: <Any Collaborators>
    */
 
@@ -188,13 +188,27 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
     require(isValue(v2), s"inequalityVal: v2 ${v2} is not a value")
     require(bop == Lt || bop == Le || bop == Gt || bop == Ge)
     (v1, v2) match {
-      case _ => ??? // delete this line when done
+      case (S(s1), S(s2)) => bop match { // must be string or number
+        case Lt => s1<s2
+        case Le => s1<=s2
+        case Gt => s1>s2
+        case Ge => s1>=s2
+      }
+      case (N(n1), N(n2)) => bop match {
+        case Lt => n1 < n2
+        case Le => n1 <= n2
+        case Gt => n1 > n2
+        case Ge => n1 >= n2
+      }
     }
   }
 
   /* This should be the same code as from Lab 3 */
   def iterate(e0: Expr)(next: (Expr, Int) => Option[Expr]): Expr = {
-    def loop(e: Expr, n: Int): Expr = ???
+    def loop(e: Expr, n: Int): Expr = next(e,n) match {
+      case None => e
+      case Some(exp) => loop(exp, n+1)
+    }
     loop(e0, 0)
   }
 
@@ -210,12 +224,18 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       case Var(y) => if (y==x) esub else e
       case Decl(mode, y, e1, e2) => if (y!=x) Decl(mode,y,substitute(e1,esub,x),substitute(e2,esub,x)) else Decl(mode,y,substitute(e1,esub,x),e2)
         /***** Cases needing adapting from Lab 3 */
-      case Function(p, params, tann, e1) =>
-        ???
-      case Call(e1, args) => ???
+      case Function(p, params, tann, e1) => p match {
+        case Some(pp) => if (pp == x || params.exists(pa => pa._1 == x)) e else substitute(e1, esub, x)
+        case None => if (params.exists(pa => pa._1 == x)) e else substitute(e1, esub, x)
+      }
+      case Call(e1, args) => Call(substitute(e1, esub, x), args map {
+        (ei) => substitute(ei, esub, x)
+      })
         /***** New cases for Lab 4 */
-      case Obj(fields) => ???
-      case GetField(e1, f) => ???
+      case Obj(fields) => Obj(fields mapValues {
+        (exp) => substitute(exp, esub, x)
+      })
+      case GetField(e1, f) => GetField(substitute(e1, esub, x), f)
     }
 
     val fvs = freeVars(???)
@@ -262,8 +282,8 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
 
   /* Check whether or not an expression is reduced enough to be applied given a mode. */
   def isRedex(mode: Mode, e: Expr): Boolean = mode match {
-    case MConst => ???
-    case MName => ???
+    case MConst => if (! isValue(e)) true else false
+    case MName => false
   }
 
   def step(e: Expr): Expr = {
