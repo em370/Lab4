@@ -149,25 +149,49 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
         // the function is potentially recursive.
         val env1 = (p, tann) match {
           /***** Add cases here *****/
+          case (Some(name),Some(ty)) => {
+            extend(env,name,ty)
+          }
+          case (None,_)=>env
           case _ => err(TUndefined, e1)
         }
         // Bind to env2 an environment that extends env1 with bindings for params.
-        val env2 = ???
+        val env2 = params.foldLeft(env1) { (acc, i) => {
+          i match {
+            case (parname, MTyp(_, party)) => extend(acc, parname, party)
+          }
+        }
+        }
         // Infer the type of the function body
-        val t1 = ???
+        val t1 = typeof(env2,e1)
         // Check with the possibly annotated return type
-        ???
+        tann match{
+          case Some(t2) => if(t2==t1) t1 else err(t2,e)
+          case None => TFunction(params,t1)
+        }
       }
       case Call(e1, args) => typeof(env, e1) match {
         case TFunction(params, tret) if (params.length == args.length) =>
           (params zip args).foreach {
-            a =>
+            a => a match{
+              case ((_,MTyp(_,pty: Typ)),arg) => if(pty != inferType(arg)) err(inferType(arg),e)
+            }
           };
           tret
         case tgot => err(tgot, e1)
       }
-      case Obj(fields) => ???
-      case GetField(e1, f) => ???
+      case Obj(fields) => {
+        val fieldtypes = fields.foldLeft(Map(): Map[String,Typ]){
+          (acc,d)=> d match{
+            case (name,e2:Expr) => extend(acc,name, inferType(e2))
+          }
+        }
+        TObj(fieldtypes)
+      }
+      case GetField(e1, f) => inferType(e1) match{
+        case TObj(types) => lookup(types,f)
+        case othertype => err(othertype, e)
+      }
     }
   }
   
