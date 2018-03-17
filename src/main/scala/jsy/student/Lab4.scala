@@ -95,7 +95,9 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
     case TObj(fields) if (fields exists { case (_, t) => hasFunctionTyp(t) }) => true
     case _ => false
   }
-  
+  def getType(e:Expr): Typ = {
+    typeof(empty,e)
+  }
   def typeof(env: TEnv, e: Expr): Typ = {
     def err[T](tgot: Typ, e1: Expr): T = throw StaticTypeError(tgot, e1, e)
 
@@ -174,7 +176,7 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
         case TFunction(params, tret) if (params.length == args.length) =>
           (params zip args).foreach {
             a => a match{
-              case ((_,MTyp(_,pty: Typ)),arg) => if(pty != inferType(arg)) err(inferType(arg),e)
+              case ((_,MTyp(_,pty: Typ)),arg) => if(pty != getType(arg)) err(getType(arg),e)
             }
           };
           tret
@@ -183,12 +185,12 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       case Obj(fields) => {
         val fieldtypes = fields.foldLeft(Map(): Map[String,Typ]){
           (acc,d)=> d match{
-            case (name,e2:Expr) => extend(acc,name, inferType(e2))
+            case (name,e2:Expr) => extend(acc,name, getType(e2))
           }
         }
         TObj(fieldtypes)
       }
-      case GetField(e1, f) => inferType(e1) match{
+      case GetField(e1, f) => getType(e1) match{
         case TObj(types) => lookup(types,f)
         case othertype => err(othertype, e)
       }
@@ -386,17 +388,12 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       }**/
       case Call(e1, args) => Call(step(e1),args)
 
-        /***** New cases for Lab 4. */
+        /***** New cases for Lab 4.*/
       case Obj(fields) => {
-        if (fields forall { case (_, exp) => isValue(exp) }) {
-          Obj(fields)
-        }
-        else {
           val fields2 = mapFirst(fields.toList) {
             case (fname,fe) => if(isValue(fe)) None else Some((fname,step(fe)))
           }
           Obj(fields2.toMap)
-        }
       }
 
       /* Everything else is a stuck error. Should not happen if e is well-typed.

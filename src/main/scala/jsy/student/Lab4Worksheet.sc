@@ -23,5 +23,5 @@ parse("function (x: number) { return x }")
 parse("function (f: (y: number) => number, x: number) { return f(x) }")
 
 // Parse objects
-parse("{ f: 0, g: true }")
+parse("{a: 5, b: 2}")
 parse("x.f")
