@@ -343,13 +343,13 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
         v1 match {
           case Function(p, params, _, e1) => {
             val pazip = params zip args
-            if (???) {
+            if (pazip forall { case ((_, MTyp(m,_)), arg) => !isRedex(m, arg) }) {
               val e1p = pazip.foldRight(e1) {
-                ???
+                case (((x, _), arg_param), acc) => substitute(acc, arg_param, x)
               }
               p match {
-                case None => ???
-                case Some(x1) => ???
+                case None => e1p
+                case Some(x1) => substitute(e1p, v1, x1)
               }
             }
             else {
@@ -370,8 +370,15 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       case Binary(bop,e1,e2) => Binary(bop,step(e1),e1)
       case Binary(bop,v1,e2) if(isValue(v1)) => Binary(bop,v1,step(e2))
       case If(e1,e2,e3) => If(step(e1),e2,e3)
-
+      case Decl(mode, x, e1, e2) => Decl(mode, x, step(e1), e2)
+      
         /***** More cases here */
+      
+      case GetField(e1, f) => e1 match {
+        case Obj(_) => GetField(step(e1), f)
+        case _=> throw StuckError(e)
+      }
+      
         /***** Cases needing adapting from Lab 3 */
       case Call(v1 @ Function(_, _, _, _), args) => ???
       case Call(e1, args) => ???
