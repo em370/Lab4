@@ -264,9 +264,9 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       case GetField(e1, f) => GetField(substitute(e1, esub, x), f)
     }
 
-    val fvs = freeVars(???)
-    def fresh(x: String): String = if (???) fresh(x + "$") else x
-    subst(???)
+    val fvs = freeVars(esub)
+    def fresh(x: String): String = if (fvs contains x) fresh(x + "$") else x
+    subst(rename(e)(fresh))
   }
 
   /* Rename bound variables in e */
@@ -289,10 +289,11 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
         case Function(p, params, retty, e1) => {
           val (pp, envp): (Option[String], Map[String,String]) = p match {
             case None => (None, env)
-            case Some(x) => ???
+            case Some(x) => val x2 = fresh(x); (Some(x2), env + (x -> x2))
           }
           val (paramsp, envpp) = params.foldRight( (Nil: List[(String,MTyp)], envp) ) {
-            ???
+            case ((s, mt @ MTyp(_,_)), (prevList , prevEnv)) => val s2 = fresh(s)
+                  ((s2, mt) :: prevList, prevEnv + (s -> s2))
           }
           Function(pp, paramsp, retty, ren(envpp, e1))
         }
@@ -301,7 +302,7 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
           case (ex) => ren(env, ex)
         })
 
-        case Obj(fields) => ???
+        case Obj(fields) => Obj(fields mapValues((ex) => ren(env, ex)))
         case GetField(e1, f) => GetField(ren(env, e1), f)
       }
     }
