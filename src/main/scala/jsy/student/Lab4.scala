@@ -365,7 +365,7 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
           case _ => throw StuckError(e)
         }
         /***** New cases for Lab 4. */
-
+      case GetField(e1@Obj(f),s) => lookup(f,s)
       /* Inductive Cases: Search Rules */
       case Print(e1) => Print(step(e1))
         /***** Cases from Lab 3. */
@@ -377,10 +377,8 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       
         /***** More cases here */
       
-      case GetField(e1, f) => e1 match {
-        case Obj(_) => GetField(step(e1), f)
-        case _=> throw StuckError(e)
-      }
+      case GetField(e1, f) => GetField(step(e1), f)
+
       
         /***** Cases needing adapting from Lab 3 */
       /** Why is this here? case Call(v1 @ Function(p,params_, _, e1), args) => {
@@ -389,6 +387,7 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       case Call(e1, args) => Call(step(e1),args)
 
         /***** New cases for Lab 4. */
+      case Obj(fields) => ???
 
       /* Everything else is a stuck error. Should not happen if e is well-typed.
        *
