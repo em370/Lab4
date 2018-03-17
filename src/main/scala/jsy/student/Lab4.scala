@@ -365,7 +365,7 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
           case _ => throw StuckError(e)
         }
         /***** New cases for Lab 4. */
-      case GetField(e1@Obj(f),s) => lookup(f,s)
+      case GetField(e1@Obj(f),s) if (f.toList forall { case (fname,fe) => isValue(fe) }) =>  lookup(f,s)
       /* Inductive Cases: Search Rules */
       case Print(e1) => Print(step(e1))
         /***** Cases from Lab 3. */
@@ -387,7 +387,17 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       case Call(e1, args) => Call(step(e1),args)
 
         /***** New cases for Lab 4. */
-      case Obj(fields) => ???
+      case Obj(fields) => {
+        if (fields forall { case (_, exp) => isValue(exp) }) {
+          Obj(fields)
+        }
+        else {
+          val fields2 = mapFirst(fields.toList) {
+            case (fname,fe) => if(isValue(fe)) None else Some((fname,step(fe)))
+          }
+          Obj(fields2.toMap)
+        }
+      }
 
       /* Everything else is a stuck error. Should not happen if e is well-typed.
        *
