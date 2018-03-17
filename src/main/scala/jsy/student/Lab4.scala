@@ -355,10 +355,11 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
               }
             }
             else {
-              val pazipp = mapFirst(pazip) {
-                ???
+              val pazipp = mapFirst(pazip) { /** this is searchCall2 **/
+                case (par@(_, MTyp(m,_)), arg) => if (isRedex(m,arg)) Some((par,step(arg))) else None
               }
-              ???
+              val (params,args2) = pazipp.unzip
+              Call(v1,args2)
             }
           }
           case _ => throw StuckError(e)
@@ -382,8 +383,12 @@ object Lab4 extends jsy.util.JsyApplication with Lab4Like {
       }
       
         /***** Cases needing adapting from Lab 3 */
-      case Call(v1 @ Function(_, _, _, _), args) => ???
-      case Call(e1, args) => ???
+      case Call(v1 @ Function(p,params_, _, e1), args) => {
+
+      }
+      case Call(e1, args) => {
+        Call(step(e1),args)
+      }
         /***** New cases for Lab 4. */
 
       /* Everything else is a stuck error. Should not happen if e is well-typed.
